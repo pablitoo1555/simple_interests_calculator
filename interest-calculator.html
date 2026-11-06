@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interest since last payment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef1f4;
+    --surface: #ffffff;
+    --ink: #14202b;
+    --muted: #5b6b7a;
+    --line: #d5dce3;
+    --accent: #1b4f7a;
+    --accent-ink: #ffffff;
+    --result-bg: #14202b;
+    --result-ink: #f4f7fa;
+    --result-muted: #9fb0bf;
+    --result-line: #2c3b4a;
+    --error: #a3321f;
+    --focus: #2f7fc1;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e151c;
+      --surface: #16202a;
+      --ink: #e7edf3;
+      --muted: #94a5b5;
+      --line: #2a3745;
+      --accent: #6fb0e3;
+      --accent-ink: #0e151c;
+      --result-bg: #e7edf3;
+      --result-ink: #14202b;
+      --result-muted: #4d5e6e;
+      --result-line: #c3ced9;
+      --error: #f08a78;
+      --focus: #6fb0e3;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e151c;
+    --surface: #16202a;
+    --ink: #e7edf3;
+    --muted: #94a5b5;
+    --line: #2a3745;
+    --accent: #6fb0e3;
+    --accent-ink: #0e151c;
+    --result-bg: #e7edf3;
+    --result-ink: #14202b;
+    --result-muted: #4d5e6e;
+    --result-line: #c3ced9;
+    --error: #f08a78;
+    --focus: #6fb0e3;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 20px 56px;
+  }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 60ch;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 24px;
+    margin-top: 28px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .wrap { padding-top: 28px; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .panel h2 {
+    margin: 0 0 18px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field:last-of-type { margin-bottom: 0; }
+  label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+  .hint { color: var(--muted); font-size: 0.82rem; margin-top: 5px; }
+
+  .input-wrap { position: relative; }
+  .affix {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .affix.pre { left: 12px; }
+  .affix.post { right: 12px; }
+
+  input, select {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  input.has-pre { padding-left: 26px; }
+  input.has-post { padding-right: 30px; }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+
+  .asof-row { display: flex; gap: 8px; }
+  .asof-row input { flex: 1; min-width: 0; }
+  button.ghost {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0 12px;
+    min-height: 44px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.ghost:hover { border-color: var(--accent); }
+
+  .actions { margin-top: 22px; }
+  button.reset {
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--muted);
+    background: none;
+    border: none;
+    padding: 6px 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Result panel: the interest figure is the one loud element */
+  .result {
+    background: var(--result-bg);
+    color: var(--result-ink);
+    border-radius: 10px;
+    padding: 28px 24px;
+  }
+  .result .label { color: var(--result-muted); font-size: 0.9rem; }
+  .result .big {
+    font-size: clamp(2.6rem, 8vw, 3.75rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 4px 0 4px;
+    overflow-wrap: anywhere;
+  }
+  .result .sub { color: var(--result-muted); font-size: 0.9rem; }
+
+  dl.breakdown { margin: 24px 0 0; border-top: 1px solid var(--result-line); }
+  dl.breakdown .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--result-line);
+  }
+  dl.breakdown dt { color: var(--result-muted); }
+  dl.breakdown dd { margin: 0; font-weight: 500; text-align: right; }
+  dl.breakdown .total dt, dl.breakdown .total dd { color: var(--result-ink); font-weight: 600; }
+
+  .formula {
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: var(--result-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .empty, .error { padding: 8px 0; }
+  .empty { color: var(--result-muted); }
+  .error { color: var(--error); font-weight: 500; }
+  .result.is-error { background: var(--surface); border: 1px solid var(--error); color: var(--ink); }
+
+  footer { margin-top: 20px; color: var(--muted); font-size: 0.82rem; max-width: 70ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Interest since last payment</h1>
+    <p>Enter the balance, the rate, and the date of the last payment. The calculator shows the simple interest that has built up since then.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="loan-h">
+      <h2 id="loan-h">Loan details</h2>
+
+      <div class="field">
+        <label for="principal">Principal balance</label>
+        <div class="input-wrap">
+          <span class="affix pre" aria-hidden="true">$</span>
+          <input id="principal" class="has-pre num" type="text" inputmode="decimal" autocomplete="off" placeholder="25,000.00">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rate">Interest rate (APR)</label>
+        <div class="input-wrap">
+          <input id="rate" class="has-post num" type="text" inputmode="decimal" autocomplete="off" placeholder="7.25">
+          <span class="affix post" aria-hidden="true">%</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="lastPay">Last payment date</label>
+        <input id="lastPay" class="num" type="date">
+      </div>
+
+      <div class="field">
+        <label for="asOf">Calculate interest through</label>
+        <div class="asof-row">
+          <input id="asOf" class="num" type="date">
+          <button type="button" class="ghost" id="todayBtn">Use today</button>
+        </div>
+        <div class="hint">Defaults to today. Change it to quote a payoff on a future date.</div>
+      </div>
+
+      <div class="field">
+        <label for="basis">Day count method</label>
+        <select id="basis">
+          <option value="act365">Actual days / 365</option>
+          <option value="act360">Actual days / 360</option>
+          <option value="30360">30 / 360</option>
+        </select>
+        <div class="hint">Use the method written in the loan agreement.</div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="reset" id="resetBtn">Clear all fields</button>
+      </div>
+    </section>
+
+    <section class="result" id="result" aria-live="polite"></section>
+  </div>
+
+  <footer>
+    Interest is simple (not compounded) and is counted from the day after the last payment through the end date. Amounts are rounded to the nearest cent only at the end.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var el = {
+    principal: $('principal'), rate: $('rate'), lastPay: $('lastPay'),
+    asOf: $('asOf'), basis: $('basis'), result: $('result'),
+    today: $('todayBtn'), reset: $('resetBtn')
+  };
+
+  var money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  var money4 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  var dateFmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+
+  function parseISO(s) {
+    var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    if (!p) return null;
+    return { y: +p[1], m: +p[2], d: +p[3], t: Date.UTC(+p[1], +p[2] - 1, +p[3]) };
+  }
+
+  function parseNumber(s) {
+    var cleaned = String(s || '').replace(/[$,%\s,]/g, '');
+    if (cleaned === '' || !/^\d*\.?\d*$/.test(cleaned) || cleaned === '.') return null;
+    return parseFloat(cleaned);
+  }
+
+  function dayCount(a, b, method) {
+    if (method === '30360') {
+      var d1 = Math.min(a.d, 30);
+      var d2 = b.d;
+      if (d2 === 31 && d1 === 30) d2 = 30;
+      return 360 * (b.y - a.y) + 30 * (b.m - a.m) + (d2 - d1);
+    }
+    return Math.round((b.t - a.t) / 86400000);
+  }
+
+  var basisInfo = {
+    act365: { denom: 365, label: 'Actual / 365' },
+    act360: { denom: 360, label: 'Actual / 360' },
+    '30360': { denom: 360, label: '30 / 360' }
+  };
+
+  function render() {
+    var principal = parseNumber(el.principal.value);
+    var rate = parseNumber(el.rate.value);
+    var last = parseISO(el.lastPay.value);
+    var asOf = parseISO(el.asOf.value);
+    var method = el.basis.value;
+    var box = el.result;
+    box.className = 'result';
+
+    if (principal === null || rate === null || !last || !asOf) {
+      box.innerHTML = '<div class="empty">Enter a balance, a rate, and a last payment date to see the interest due.</div>';
+      return;
+    }
+
+    if (asOf.t < last.t) {
+      box.className = 'result is-error';
+      box.innerHTML = '<div class="error">The end date is before the last payment date. Choose an end date on or after ' +
+        dateFmt.format(new Date(last.t)) + '.</div>';
+      return;
+    }
+
+    var info = basisInfo[method];
+    var days = dayCount(last, asOf, method);
+    var perDiem = principal * (rate / 100) / info.denom;
+    var interest = Math.round(perDiem * days * 100) / 100;
+    var payoff = Math.round((principal + interest) * 100) / 100;
+
+    var formula = money.format(principal) + ' × ' + rate + '% × ' + days + ' ÷ ' + info.denom + ' = ' + money.format(interest);
+
+    box.innerHTML =
+      '<div class="label">Interest due</div>' +
+      '<div class="big num">' + money.format(interest) + '</div>' +
+      '<div class="sub num">' + dateFmt.format(new Date(last.t)) + ' to ' + dateFmt.format(new Date(asOf.t)) + '</div>' +
+      '<dl class="breakdown">' +
+        '<div class="line"><dt>Days of interest</dt><dd class="num">' + days + '</dd></div>' +
+        '<div class="line"><dt>Interest per day</dt><dd class="num">' + money4.format(perDiem) + '</dd></div>' +
+        '<div class="line"><dt>Day count method</dt><dd>' + info.label + '</dd></div>' +
+        '<div class="line"><dt>Principal balance</dt><dd class="num">' + money.format(principal) + '</dd></div>' +
+        '<div class="line total"><dt>Principal plus interest</dt><dd class="num">' + money.format(payoff) + '</dd></div>' +
+      '</dl>' +
+      '<div class="formula num">' + formula + '</div>';
+  }
+
+  el.asOf.value = todayISO();
+
+  ['input', 'change'].forEach(function (evt) {
+    [el.principal, el.rate, el.lastPay, el.asOf, el.basis].forEach(function (n) {
+      n.addEventListener(evt, render);
+    });
+  });
+
+  el.principal.addEventListener('blur', function () {
+    var v = parseNumber(el.principal.value);
+    if (v !== null) {
+      el.principal.value = v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  });
+
+  el.today.addEventListener('click', function () {
+    el.asOf.value = todayISO();
+    render();
+  });
+
+  el.reset.addEventListener('click', function () {
+    el.principal.value = '';
+    el.rate.value = '';
+    el.lastPay.value = '';
+    el.asOf.value = todayISO();
+    el.basis.value = 'act365';
+    render();
+    el.principal.focus();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
